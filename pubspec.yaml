@@ -1,0 +1,43 @@
+name: personal_automation_engine
+description: A powerful personal automation engine app
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+
+  # Firebase
+  firebase_core: ^2.27.1
+  firebase_auth: ^4.17.9
+  firebase_database: ^10.4.9
+  google_sign_in: ^6.2.1
+
+  # Local Storage (web compatible)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Charts (web compatible)
+  fl_chart: ^0.66.2
+
+  # Utilities
+  uuid: ^4.3.3
+  intl: ^0.19.0
+
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/sounds/
