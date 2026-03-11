@@ -1,264 +1,505 @@
-# ⚡ Personal Automation Engine
+# 🤖 Personal Automation Engine
 
-A powerful, extensible personal automation app built with Flutter. Create smart automation rules that react to triggers, evaluate conditions, and execute actions — automatically.
-
----
-
-## 📱 Screenshots
-
-> Run the app to see the stunning dark glassmorphism UI in action!
+> A rule-based personal automation app built with Flutter & Firebase — create IF-THEN rules that automatically execute actions based on triggers like time, battery, connectivity, and more.
 
 ---
 
-## 🚀 Features
+## 🌐 Live Demo
 
-### Core Features
-- ✅ **Rule Management** — Create, edit, enable/disable, and delete automation rules
-- ✅ **6 Trigger Types** — Time, App Open, Manual, Battery, Connectivity, Interval
-- ✅ **3 Condition Types** — Time Range, Day of Week, Counter (with AND/OR chaining)
-- ✅ **6 Action Types** — Notification, Log, Display Message, Sound, Clipboard, Webhook
-- ✅ **Rule Priority System** — High / Medium / Low with priority queue execution
+**🔗 [https://personal-automation-engine.web.app](https://personal-automation-engine.web.app)**
 
-### Optional Enhancements (All Implemented!)
-- ✅ **Rule Execution Logs** — Full execution history with timeline view
-- ✅ **Rule Priority System** — Priority queue ensures high-priority rules run first
-- ✅ **Conflict Detection** — Warns when rules have overlapping triggers and actions
-- ✅ **JSON Export/Import** — Share rules as `.json` files across devices
-- ✅ **Sandbox Mode** — Test rules safely without executing real actions
-- ✅ **Performance Monitoring** — Tracks execution time (ms) per rule
+> Sign in with Google, GitHub, or Email to start automating!
 
-### WOW Features
-- 🎨 **Glassmorphism UI** — Stunning dark theme with gradient cards
-- 🔗 **AND/OR Condition Chaining** — Complex multi-condition logic
-- 📊 **Analytics Dashboard** — Bar charts for daily executions + per-rule stats
-- 🔍 **Search & Filter** — Search rules by name, filter by enabled/disabled
-- 🔄 **Background Execution** — Rules run in background via WorkManager
+---
+
+## 📸 Screenshots
+
+| Splash Screen | Login Screen |
+|---|---|
+| ![Splash](screenshots/splash.png) | ![Login](screenshots/login.png) |
+
+| Dashboard | Create Rule |
+|---|---|
+| ![Dashboard](screenshots/dashboard.png) | ![Create Rule](screenshots/create_rule.png) |
+
+| AI Suggestions | Analytics |
+|---|---|
+| ![AI Suggestions](screenshots/ai_suggestions.png) | ![Analytics](screenshots/analytics.png) |
+
+| Profile |  |
+|---|---|
+| ![Profile](screenshots/profile.png) | |
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Design Decisions](#design-decisions)
+- [Project Structure](#project-structure)
+- [Rule Engine](#rule-engine)
+- [Firebase Integration](#firebase-integration)
+- [Authentication](#authentication)
+- [Setup & Installation](#setup--installation)
+- [Deployment](#deployment)
+
+---
+
+## 🎯 Overview
+
+Personal Automation Engine is a **cross-platform automation app** that lets users create smart rules without any coding. Think of it like **Apple Shortcuts** or **IFTTT** — but built from scratch using Flutter.
+
+A rule consists of:
+```
+TRIGGER  →  CONDITIONS (optional)  →  ACTIONS
+  ↓                ↓                     ↓
+"When..."      "Only if..."          "Then do..."
+```
+
+**Example:**
+```
+Trigger:    Every day at 9:00 AM
+Condition:  Only on weekdays
+Action:     Show notification "Time to focus! 🚀"
+```
+
+---
+
+## ✨ Features
+
+### 🔐 Authentication
+- Google OAuth Sign-in (real Firebase popup)
+- GitHub OAuth Sign-in (real Firebase popup)
+- Email & Password Sign-up / Sign-in
+- Forgot Password (sends real reset email)
+- Session persistence (stay logged in after refresh)
+- Per-user data isolation in Firebase
+
+### ⚡ Rule Engine — 6 Triggers
+| Trigger | Description |
+|---------|-------------|
+| ⏰ Time | Fires at a specific time every day |
+| 📱 App Open | Fires every time the app is opened |
+| 🔘 Manual | Fires when user taps the Run button |
+| 🔋 Battery | Fires when battery drops below a threshold |
+| 📶 Connectivity | Fires when WiFi connects or disconnects |
+| ⏱️ Interval | Fires every X minutes |
+
+### 🎯 6 Actions
+| Action | Description |
+|--------|-------------|
+| 🔔 Notification | Shows a browser/system notification |
+| 💬 Display Message | Shows a popup dialog or snackbar |
+| 📝 Log Entry | Saves a log entry to Firebase |
+| 🔊 Play Sound | Plays a sound via Web Audio API |
+| 📋 Copy to Clipboard | Copies text to clipboard |
+| 🌐 Call Webhook | Makes an HTTP request to any URL |
+
+### 🧠 3 Conditions
+| Condition | Description |
+|-----------|-------------|
+| 🕐 Time Range | Only run between certain hours |
+| 📅 Day of Week | Only run on specific days |
+| 🔢 Counter | Only run after N executions |
+
+### 📊 Other Features
+- **Real-time sync** — rules & logs sync instantly via Firebase
+- **AI Rule Suggestions** — one-tap add pre-built smart rules
+- **Analytics Dashboard** — charts showing execution stats
+- **Sandbox Mode** — test rules without executing real actions
+- **Conflict Detection** — warns when rules might conflict
+- **Rule Priority** — High / Medium / Low priority ordering
+- **Execution Logs** — full history of every rule run
+- **Alerts Center** — notifications with Clear All support
+- **Dark Mode UI** — glassmorphism design with neon gradients
+- **Export / Import** — backup rules as JSON
 
 ---
 
 ## 🏗️ Architecture
 
+The app follows a **clean layered architecture**:
+
 ```
-personal_automation_engine/
+┌─────────────────────────────────────────┐
+│              UI Layer                    │
+│   Screens → Widgets → Animations        │
+├─────────────────────────────────────────┤
+│           State Management               │
+│     Flutter Riverpod (Providers)        │
+├─────────────────────────────────────────┤
+│            Service Layer                 │
+│  FirebaseService │ AnalyticsService     │
+│  SoundService    │ NotificationService  │
+├─────────────────────────────────────────┤
+│             Engine Layer                 │
+│  Triggers → Conditions → Actions        │
+├─────────────────────────────────────────┤
+│             Data Layer                   │
+│  Firebase Realtime DB │ Hive (local)    │
+└─────────────────────────────────────────┘
+```
+
+### Data Flow:
+```
+User creates rule
+      ↓
+RulesNotifier (Riverpod)
+      ↓
+FirebaseService.saveRule()
+      ↓
+Firebase Realtime Database
+      ↓
+Stream updates all listeners
+      ↓
+UI rebuilds automatically
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose | Version |
+|-----------|---------|---------|
+| **Flutter** | UI Framework | 3.x |
+| **Dart** | Programming Language | 3.x |
+| **Firebase Auth** | Authentication | ^4.17.9 |
+| **Firebase Realtime DB** | Real-time Database | ^10.4.9 |
+| **Firebase Hosting** | Web Deployment | Latest |
+| **Flutter Riverpod** | State Management | ^2.4.9 |
+| **Google Sign In** | OAuth | ^6.2.1 |
+| **Hive** | Local Storage | ^2.2.3 |
+| **FL Chart** | Analytics Charts | ^0.66.2 |
+| **UUID** | Unique IDs | ^4.3.3 |
+
+---
+
+## 🎨 Design Decisions
+
+### 1. Flutter for Cross-Platform
+**Decision:** Use Flutter instead of native Android/iOS or React Native.
+
+**Reason:**
+- Single codebase for Web + Android + iOS
+- Rich animation support for glassmorphism UI
+- Strong type safety with Dart
+- Excellent Firebase SDK support
+
+### 2. Firebase Realtime Database over Firestore
+**Decision:** Use Realtime Database instead of Firestore.
+
+**Reason:**
+- Free tier available without billing enabled
+- Real-time streaming built-in
+- Simpler JSON structure fits our rule model perfectly
+- Lower latency for live sync
+
+### 3. Riverpod for State Management
+**Decision:** Use Riverpod over Provider, Bloc, or GetX.
+
+**Reason:**
+- Compile-safe — no runtime errors from missing providers
+- Stream-based — perfect for Firebase real-time listeners
+- No BuildContext required — works anywhere in code
+- Easy to test
+
+### 4. Hybrid Storage (Firebase + Hive)
+**Decision:** Use both Firebase (cloud) and Hive (local) together.
+
+**Reason:**
+- Firebase handles auth & cross-device sync
+- Hive handles local rule execution engine
+- App works offline with cached data
+- Best of both worlds
+
+### 5. Dark Glassmorphism UI
+**Decision:** Dark theme with neon purple/cyan gradients.
+
+**Reason:**
+- Automation apps feel more "technical" with dark themes
+- Glassmorphism gives premium feel
+- Neon colors provide clear visual hierarchy
+- Matches the "smart/AI" brand identity
+
+### 6. Rule Engine Design Pattern
+**Decision:** Strategy pattern for triggers and actions.
+
+**Reason:**
+- Each trigger/action is an independent class
+- Easy to add new triggers without changing existing code
+- Open/Closed Principle — open for extension, closed for modification
+- Clean separation of concerns
+
+```dart
+// Example: Adding a new trigger is just adding one class
+class LocationTrigger extends BaseTrigger {
+  @override
+  Future<bool> shouldFire() async {
+    // check location logic
+  }
+}
+```
+
+---
+
+## 📁 Project Structure
+
+```
+lib/
+├── main.dart                    # App entry point + Firebase init
+├── firebase_options.dart        # Auto-generated Firebase config
 │
-├── lib/
-│   ├── main.dart                        # App entry point + lifecycle
-│   │
-│   ├── core/                            # Shared utilities
-│   │   ├── constants/app_constants.dart # Trigger/condition/action type IDs
-│   │   ├── theme/app_theme.dart         # Glassmorphism dark theme
-│   │   └── utils/
-│   │       ├── date_utils.dart          # Date formatting helpers
-│   │       └── conflict_detector.dart   # Rule conflict detection logic
-│   │
-│   ├── data/                            # Data layer
-│   │   ├── models/                      # Pure Dart data models (toJson/fromJson)
-│   │   │   ├── rule_model.dart
-│   │   │   ├── trigger_model.dart
-│   │   │   ├── condition_model.dart     # Includes AND/OR operator
-│   │   │   ├── action_model.dart
-│   │   │   └── log_model.dart           # Includes durationMs, isSandbox
-│   │   ├── local/
-│   │   │   ├── database_helper.dart     # Hive initialization
-│   │   │   └── rule_dao.dart            # All CRUD operations
-│   │   └── repositories/
-│   │       └── rule_repository.dart     # Repository pattern abstraction
-│   │
-│   ├── engine/                          # 🧠 Automation Engine
-│   │   ├── automation_engine.dart       # Priority queue evaluator + executor
-│   │   ├── triggers/
-│   │   │   ├── base_trigger.dart        # Abstract class
-│   │   │   └── triggers.dart            # All 6 trigger implementations
-│   │   ├── conditions/
-│   │   │   ├── base_condition.dart      # Abstract class
-│   │   │   ├── conditions.dart          # All 3 condition implementations
-│   │   │   └── condition_evaluator.dart # AND/OR chaining logic
-│   │   └── actions/
-│   │       ├── base_action.dart         # Abstract class
-│   │       └── actions.dart             # All 6 action implementations
-│   │
-│   ├── services/
-│   │   ├── notification_service.dart    # Local notifications
-│   │   ├── background_service.dart      # WorkManager background tasks
-│   │   ├── json_export_service.dart     # JSON import/export
-│   │   └── analytics_service.dart      # Performance stats computation
-│   │
-│   ├── providers/
-│   │   └── providers.dart              # All Riverpod state providers
-│   │
-│   └── ui/
-│       ├── screens/
-│       │   ├── home_screen.dart         # Rules list + stats overview
-│       │   ├── create_rule_screen.dart  # 4-step wizard to create/edit rules
-│       │   ├── logs_screen.dart         # Execution history timeline
-│       │   ├── analytics_screen.dart    # Charts + performance monitoring
-│       │   └── sandbox_screen.dart      # Safe rule testing mode
-│       └── widgets/
-│           ├── glass_card.dart          # Glassmorphism card widget
-│           └── rule_card.dart           # Animated rule list item
+├── core/
+│   ├── constants/
+│   │   └── app_constants.dart   # Trigger/action type constants
+│   └── theme/
+│       └── app_theme.dart       # Dark theme + colors
+│
+├── data/
+│   ├── models/
+│   │   ├── rule_model.dart      # Core rule data model
+│   │   ├── trigger_model.dart   # Trigger type + params
+│   │   ├── action_model.dart    # Action type + params
+│   │   ├── condition_model.dart # Condition logic
+│   │   └── log_model.dart       # Execution log entry
+│   ├── local/
+│   │   ├── database_helper.dart # Hive initialization
+│   │   └── rule_dao.dart        # Local CRUD operations
+│   └── repositories/
+│       └── rule_repository.dart # Data access layer
+│
+├── engine/
+│   ├── automation_engine.dart   # Core rule executor
+│   ├── triggers/
+│   │   ├── base_trigger.dart    # Abstract trigger class
+│   │   └── triggers.dart        # All 6 trigger implementations
+│   ├── conditions/
+│   │   └── condition_evaluator.dart
+│   └── actions/
+│       ├── base_action.dart     # Abstract action class
+│       └── actions.dart         # All 6 action implementations
+│
+├── providers/
+│   └── providers.dart           # Riverpod state providers
+│
+├── services/
+│   ├── firebase_service.dart    # Firebase Auth + DB wrapper
+│   ├── analytics_service.dart   # Stats computation
+│   ├── notification_service.dart
+│   ├── sound_service.dart       # Web Audio API
+│   └── json_export_service.dart # Export/Import rules
+│
+└── ui/
+    ├── screens/
+    │   ├── splash_screen.dart   # Animated splash
+    │   ├── login_screen.dart    # Auth screen
+    │   ├── signup_screen.dart   # Registration
+    │   ├── home_screen.dart     # Rules dashboard
+    │   ├── create_rule_screen.dart
+    │   ├── analytics_screen.dart
+    │   ├── logs_screen.dart
+    │   ├── alerts_screen.dart
+    │   ├── sandbox_screen.dart
+    │   ├── profile_screen.dart
+    │   ├── settings_screen.dart
+    │   ├── ai_suggest_screen.dart
+    │   ├── ai_insights_screen.dart
+    │   └── ai_optimize_screen.dart
+    └── widgets/
+        └── (reusable components)
 ```
 
 ---
 
-## 🧠 Engine Design
+## ⚙️ Rule Engine
 
-### Rule Evaluation Flow
-
-```
-User Opens App / Background Trigger Fires
-         │
-         ▼
-  Find all ENABLED rules
-  with matching trigger type
-         │
-         ▼
-  Sort by PRIORITY (High → Low)
-         │
-         ▼
-  For each rule:
-    1. Check trigger.shouldFire()
-    2. Evaluate conditions with AND/OR chaining
-    3. Execute all actions sequentially
-    4. Log result with duration (ms)
-         │
-         ▼
-  Update UI + Execution Count
-```
-
-### Condition AND/OR Chaining
+The automation engine uses a **pipeline pattern**:
 
 ```
-Condition 1 [operator: AND] ──┐
-Condition 2 [operator: OR]  ──┼──► Result
-Condition 3                 ──┘
-
-Evaluation: ((C1 AND C2) OR C3)
+1. TRIGGER CHECK
+   └── Does this trigger apply right now?
+         ↓ YES
+2. CONDITION EVALUATION
+   └── Are all conditions met?
+         ↓ YES
+3. ACTION EXECUTION
+   └── Execute each action in sequence
+         ↓
+4. LOG RESULT
+   └── Save to Firebase with success/fail status
 ```
 
-### Conflict Detection Algorithm
-
-Two rules conflict if they:
-1. Share the same trigger type
-2. AND have identical trigger parameters (exact collision)
-3. OR share the same trigger type AND same action types (functional overlap)
+### Trigger Implementation Example:
+```dart
+class TimeTrigger extends BaseTrigger {
+  @override
+  Future<bool> shouldFire() async {
+    final configTime = model.parameters['time'] as String;
+    final now = TimeOfDay.now();
+    final parts = configTime.split(':');
+    final triggerHour = int.parse(parts[0]);
+    final triggerMin = int.parse(parts[1]);
+    return now.hour == triggerHour && now.minute == triggerMin;
+  }
+}
+```
 
 ---
 
-## ⚙️ Setup Instructions
+## 🔥 Firebase Integration
 
-### 1. Install Dependencies
+### Database Structure:
+```json
+{
+  "users": {
+    "USER_UID": {
+      "profile": {
+        "name": "Alex",
+        "email": "alex@example.com",
+        "avatar": "🧑‍💻",
+        "createdAt": "2024-01-01T00:00:00Z"
+      },
+      "rules": {
+        "RULE_ID": {
+          "id": "uuid",
+          "name": "Morning Reminder",
+          "isEnabled": true,
+          "trigger": { "type": "time", "parameters": { "time": "09:00" } },
+          "conditions": [],
+          "actions": [{ "type": "notification", "parameters": { "title": "Good morning!" } }],
+          "createdAt": "2024-01-01T00:00:00Z",
+          "priority": 1
+        }
+      },
+      "logs": {
+        "LOG_ID": {
+          "ruleId": "uuid",
+          "ruleName": "Morning Reminder",
+          "success": true,
+          "message": "Rule executed successfully",
+          "durationMs": 23,
+          "executedAt": "2024-01-01T09:00:00Z"
+        }
+      }
+    }
+  }
+}
+```
+
+### Security Rules:
+```json
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    }
+  }
+}
+```
+
+---
+
+## 🔐 Authentication
+
+Three sign-in methods supported:
+
+```
+1. Google OAuth
+   User clicks "Sign in with Google"
+         ↓
+   Firebase opens Google popup
+         ↓
+   User selects Google account
+         ↓
+   Firebase returns UserCredential
+         ↓
+   App navigates to HomeScreen
+
+2. GitHub OAuth
+   (Same flow with GitHub popup)
+
+3. Email / Password
+   User enters email + password
+         ↓
+   Firebase Auth validates
+         ↓
+   App navigates to HomeScreen
+```
+
+---
+
+## 🚀 Setup & Installation
+
+### Prerequisites:
+- Flutter SDK 3.x
+- Node.js + npm
+- Firebase CLI
+- Git
+
+### Steps:
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/yourusername/personal_automation_engine
+cd personal_automation_engine
+
+# 2. Install dependencies
 flutter pub get
+
+# 3. Configure Firebase (already done — firebase_options.dart included)
+
+# 4. Run locally
+flutter run -d chrome
+
+# 5. Run on Android
+flutter run -d android
 ```
 
-### 2. Android Setup
+---
 
-Add to `android/app/src/main/AndroidManifest.xml`:
+## 🌐 Deployment
 
-```xml
-<!-- WorkManager background tasks -->
-<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-
-<!-- Notifications -->
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-
-<!-- Battery -->
-<uses-permission android:name="android.permission.BATTERY_STATS"/>
-
-<!-- Network -->
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-
-<!-- Inside <application> tag -->
-<service
-    android:name="be.tramckrijte.workmanager.BackgroundWorker"
-    android:permission="android.permission.BIND_JOB_SERVICE"
-    android:exported="true" />
-```
-
-### 3. iOS Setup
-
-Add to `ios/Runner/Info.plist`:
-
-```xml
-<key>UIBackgroundModes</key>
-<array>
-    <string>fetch</string>
-    <string>processing</string>
-</array>
-<key>NSUserNotificationUsageDescription</key>
-<string>Automation Engine uses notifications to alert you when rules execute.</string>
-```
-
-### 4. Run the App
+### Deploy to Firebase Hosting:
 
 ```bash
-flutter run
+# Build web version
+flutter build web
+
+# Deploy to Firebase
+firebase deploy
 ```
 
----
+### Live URL:
+```
+https://personal-automation-engine.web.app
+```
 
-## 🎯 Trigger Types
-
-| Trigger | Description | Parameters |
-|---|---|---|
-| ⏰ Time | Fires at a specific daily time | `time: "HH:MM"` |
-| 📱 App Open | Fires every app launch | none |
-| 🔘 Manual | User taps Run button | none |
-| 🔋 Battery | Fires at battery threshold | `threshold: int, direction: above/below` |
-| 📶 Connectivity | WiFi connect/disconnect | `state: connected/disconnected` |
-| ⏱️ Interval | Fires every N minutes | `intervalMinutes: int` |
-
----
-
-## 🔧 Action Types
-
-| Action | Description | Parameters |
-|---|---|---|
-| 🔔 Notification | Local push notification | `title, body` |
-| 📝 Log | Write to execution log | `message` |
-| 💬 Display Message | In-app snackbar | `message` |
-| 🔊 Sound | Device haptic/sound | `sound: alert/success/warning` |
-| 📋 Clipboard | Copy text to clipboard | `text` |
-| 🌐 Webhook | HTTP GET/POST request | `url, method` |
-
----
-
-## 📊 Performance Monitoring
-
-Every rule execution tracks:
-- **Duration (ms)** — How long the rule took to evaluate and execute
-- **Success/Failure** — Whether all actions completed without errors
-- **Actions Executed** — Which actions ran and their output messages
-
-View these in the **Analytics** tab with 7-day bar charts and per-rule stats.
-
----
-
-## 🏛️ Design Decisions
-
-1. **Hive with JSON strings** — Chose simple `Box<String>` over typed Hive adapters to avoid code generation, making the project easier to build and extend.
-
-2. **Riverpod for state** — `StateNotifier` + `Provider` pattern gives clean separation between UI and business logic.
-
-3. **Clean Architecture layers** — Data → Repository → Engine → Provider → UI. Each layer only knows about the layer below it.
-
-4. **Extensibility** — Adding a new trigger/condition/action only requires:
-   - Creating a class extending `BaseTrigger`/`BaseCondition`/`BaseAction`
-   - Adding a case in `AutomationEngine`'s factory methods
-   - Adding the type string to `AppConstants`
-
-5. **AND/OR chaining** — The `operator` field on `ConditionModel` determines how each condition joins with the next one, enabling complex logic like `(C1 AND C2) OR C3`.
+### Update Deployment:
+```bash
+# After making changes:
+flutter build web && firebase deploy
+```
 
 ---
 
 ## 👨‍💻 Author
 
-Built as a college club assignment submission.
+**Built for College Club Admission Task**
 
-**Technology:** Flutter (Dart)  
-**Storage:** Hive  
-**State Management:** Riverpod  
-**Background Tasks:** WorkManager  
-**Charts:** fl_chart
+- Platform: Flutter Web + Android
+- Backend: Firebase (Auth + Realtime Database + Hosting)
+- Design: Dark glassmorphism with neon gradients
+
+---
+
+## 📄 License
+
+This project is built for educational purposes as part of a college club submission.
+
+---
+
+*Built with ❤️ using Flutter & Firebase*
